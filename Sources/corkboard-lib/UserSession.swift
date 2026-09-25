@@ -6,4 +6,5 @@ struct UserSession: Codable {
     let createdAt: Date
     var expiresAt: Date
     var lastActiveAt: Date
+    var renewalCount: Int
 }
