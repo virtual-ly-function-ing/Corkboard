@@ -1,4 +1,10 @@
 import Foundation
+import Crypto
+
+private func hashToken(_ token: String) -> String {
+    let digest = SHA256.hash(data: Data(token.utf8))
+    return digest.map { String(format: "%02x", $0) }.joined()
+}
 
 actor SessionManager {
 
@@ -29,12 +35,12 @@ actor SessionManager {
         renewed.lastActiveAt = now
         renewed.expiresAt = now.addingTimeInterval(idleTimeout)
         renewed.renewalCount += 1
-        sessionStorage[renewed.id] = renewed
+        sessionStorage[hashToken(renewed.id)] = renewed
         return renewed
     }
 
     func destroySession(_ sessionID: String) {
-        sessionStorage.removeValue(forKey: sessionID)
+        sessionStorage.removeValue(forKey: hashToken(sessionID))
     }
 
     func destroyAllSessions(for userID: UUID) {
@@ -55,12 +61,12 @@ actor SessionManager {
             lastActiveAt: now,
             renewalCount: 0
         )
-        sessionStorage[session.id] = session
+        sessionStorage[hashToken(session.id)] = session
         return session
     }
 
     func validateSession(id: String) -> UserSession? {
-        guard let session = sessionStorage[id] else { return nil }
+        guard let session = sessionStorage[hashToken(id)] else { return nil }
         let now = clock.now()
 
         if isAbsolutelyExpired(session, now: now) {

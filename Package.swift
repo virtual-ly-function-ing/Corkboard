@@ -15,12 +15,17 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/P-H-C/phc-winner-argon2.git", branch: "master")
+        .package(url: "https://github.com/P-H-C/phc-winner-argon2.git", branch: "master"),
+        .package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0"),
     ],
     targets: [
         .target(
             name: "corkboard-lib",
-            dependencies: [.product(name: "argon2", package: "phc-winner-argon2")]),
+            dependencies: [
+                .product(name: "argon2", package: "phc-winner-argon2"),
+                .product(name: "Crypto", package: "swift-crypto"),
+            ]
+        ),
         .executableTarget(
             name: "corkboard-main",
             dependencies: ["corkboard-lib"]
