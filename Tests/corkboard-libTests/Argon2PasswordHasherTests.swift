@@ -42,4 +42,13 @@ struct Argon2PasswordHasherTests {
             _ = try await hasher.verify(password: "anything", against: "not-a-real-hash")
         }
     }
+
+    @Test("Hashing still round-trips correctly with non-default, larger parameters")
+    func hashRoundTripsWithLargerParameters() async throws {
+        let hasher = NativeArgon2PasswordHasher(
+            timeCost: 2, memoryCost: 19456, parallelism: 1, hashLength: 128)
+        let hash = try await hasher.hash(password: "a reasonably long passphrase")
+        #expect(try await hasher.verify(password: "a reasonably long passphrase", against: hash))
+    }
+    
 }

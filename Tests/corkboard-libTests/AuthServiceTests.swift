@@ -11,8 +11,8 @@ struct AuthServiceTests {
         let sessionManager = SessionManager()
         let auth = AuthService(userStore: userStore, sessionManager: sessionManager)
 
-        let session = try await auth.register(username: "ada", password: "s3cret")
-        let user = try await userStore.authenticate(username: "ada", password: "s3cret")
+        let session = try await auth.register(username: "ada", password: "s3cret-password")
+        let user = try await userStore.authenticate(username: "ada", password: "s3cret-password")
 
         #expect(session.userID == user.id)
     }
@@ -23,9 +23,9 @@ struct AuthServiceTests {
         let sessionManager = SessionManager()
         let auth = AuthService(userStore: userStore, sessionManager: sessionManager)
 
-        _ = try await auth.register(username: "ada", password: "s3cret")
-        let session = try await auth.login(username: "ada", password: "s3cret")
-        let user = try await userStore.authenticate(username: "ada", password: "s3cret")
+        _ = try await auth.register(username: "ada", password: "s3cret-password")
+        let session = try await auth.login(username: "ada", password: "s3cret-password")
+        let user = try await userStore.authenticate(username: "ada", password: "s3cret-password")
 
         #expect(session.userID == user.id)
     }
@@ -35,8 +35,8 @@ struct AuthServiceTests {
         let userStore = UserStore(hasher: FakePasswordHasher())
         let sessionManager = SessionManager()
         let auth = AuthService(userStore: userStore, sessionManager: sessionManager)
-        _ = try await auth.register(username: "ada", password: "s3cret")
-        let user = try await userStore.authenticate(username: "ada", password: "s3cret")
+        _ = try await auth.register(username: "ada", password: "s3cret-password")
+        let user = try await userStore.authenticate(username: "ada", password: "s3cret-password")
 
         await #expect(throws: UserStoreError.invalidCredentials) {
             _ = try await auth.login(username: "ada", password: "wrong")
@@ -49,11 +49,11 @@ struct AuthServiceTests {
         let userStore = UserStore(hasher: FakePasswordHasher())
         let sessionManager = SessionManager()
         let auth = AuthService(userStore: userStore, sessionManager: sessionManager)
-        _ = try await auth.register(username: "ada", password: "first")
-        let user = try await userStore.authenticate(username: "ada", password: "first")
+        _ = try await auth.register(username: "ada", password: "first-password")
+        let user = try await userStore.authenticate(username: "ada", password: "first-password")
 
         await #expect(throws: UserStoreError.usernameTaken) {
-            _ = try await auth.register(username: "ada", password: "second")
+            _ = try await auth.register(username: "ada", password: "second-password")
         }
         #expect(await sessionManager.activeSessionCount(for: user.id) == 1)
     }

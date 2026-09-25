@@ -37,7 +37,7 @@ struct NativeArgon2PasswordHasher: PasswordHasher {
     private func hashSync(password: String) throws -> String {
         let passwordBytes = Array(password.utf8)
         let salt = randomSalt()
-        var encodedBuffer = [Int8](repeating: 0, count: 256)
+        var encodedBuffer = [Int8](repeating: 0, count: encodedLength(saltLength: salt.count))
 
         let result = argon2id_hash_encoded(
             timeCost, memoryCost, parallelism,
@@ -70,5 +70,23 @@ struct NativeArgon2PasswordHasher: PasswordHasher {
             bytes[i] = UInt8.random(in: 0...255, using: &generator)
         }
         return bytes
+    }
+
+    /// Computes a safe buffer size for the encoded PHC string
+    /// ("$argon2id$v=19$m=<m>,t=<t>,p=<p>$<salt>$<hash>\0") from this
+    /// hasher's own parameters, instead of relying on a hardcoded constant
+    /// that silently stops being correct if the parameters change.
+    private func encodedLength(saltLength: Int) -> Int {
+        func base64Length(for byteCount: Int) -> Int {
+            // Unpadded base64 length: ceil(4n/3)
+            (byteCount * 4 + 2) / 3
+        }
+        let template = "$argon2id$v=19$m=,t=,p=$$"
+        let numericDigits =
+            String(memoryCost).count + String(timeCost).count + String(parallelism).count
+        let saltPart = base64Length(for: saltLength)
+        let hashPart = base64Length(for: hashLength)
+        // Small safety margin for the null terminator and any rounding.
+        return template.count + numericDigits + saltPart + hashPart + 16
     }
 }
