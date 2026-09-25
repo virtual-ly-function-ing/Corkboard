@@ -1,7 +1,7 @@
+import Foundation
 import Testing
 
 @testable import corkboard_lib
-import Foundation
 
 @Suite("SessionManager")
 struct SessionManagerTests {
@@ -143,5 +143,55 @@ struct SessionManagerTests {
         let manager = SessionManager()
         let result = await manager.validateSession(id: "not-a-real-session-id")
         #expect(result == nil)
+    }
+
+    @Test("A session validated at exactly its expiry instant is still valid")
+    func validateAtExactExpiryBoundary() async {
+        let clock = TestClock()
+        let manager = SessionManager(idleTimeout: 3600, absoluteLifetime: 86400, clock: clock)
+        let session = await manager.createSession(for: UUID())
+
+        clock.advance(by: 3600)
+
+        let result = await manager.validateSession(id: session.id)
+        #expect(
+            result != nil,
+            "isIdleExpired uses now > expiresAt, so the exact boundary instant should still be valid"
+        )
+    }
+
+    @Test("Session IDs are 64 hex characters and don't collide across many generations")
+    func sessionIDsAreWellFormedAndUnique() async {
+        let manager = SessionManager()
+        let userID = UUID()
+
+        var ids = Set<String>()
+        for _ in 0..<1000 {
+            let session = await manager.createSession(for: userID)
+            ids.insert(session.id)
+        }
+
+        #expect(ids.count == 1000, "1000 generations should produce 1000 distinct ids")
+        for id in ids {
+            #expect(id.count == 64, "expected 4 words × 16 hex chars each")
+            #expect(id.allSatisfy { $0.isHexDigit }, "id should contain only hex characters")
+        }
+    }
+
+    @Test(
+        "activeSessionCount reflects exactly the sessions belonging to each user among a mixed population"
+    )
+    func activeSessionCountWithMixedUsers() async {
+        let manager = SessionManager()
+        let userA = UUID()
+        let userB = UUID()
+
+        _ = await manager.createSession(for: userA)
+        _ = await manager.createSession(for: userA)
+        _ = await manager.createSession(for: userA)
+        _ = await manager.createSession(for: userB)
+
+        #expect(await manager.activeSessionCount(for: userA) == 3)
+        #expect(await manager.activeSessionCount(for: userB) == 1)
     }
 }
